@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zalig Kerstfeest</title>
+<meta name="robots" content="noindex">
+<!--
+  K24 kerstfilmpje "hert v2" (stap D1, 11-11-2026): scène 1-4 ECHT geanimeerd volgens storyboard v3.1.
+    1 Opening   0,0-4,1 s  maan komt op (links), stevige plank schuift omhoog met glimlicht, sneeuw
+    2 Laser     4,1-8,3 s  variant D: lichte voorschets, laser brandt tekening (0-70 %), titel (70-90 %), kader (90-100 %)
+    3 Dieren    8,3-16,6 s kaart zoomt in op de dieren (1,3x) + diepte binnen de tekening; ademen, oor-tikjes;
+                           maat 5 (12,4 s): jong kijkt naar het hert
+    4 Kijkt op 16,6-20,7 s belletjes zwellen aan; kaart zoomt uit en de camera kantelt omhoog; hert heft de kop
+                           naar de maan, jong volgt een halve tel later
+  Scène 5-7 (kerstman, sterrenstof, naam) volgen in D2/D3: na 20,7 s stopt deze testversie zacht.
+  Alles loopt op de klok van de muziek (AudioContext). Motor: ../gedeeld/motor.js, muziek: ../gedeeld/muziek.js.
+  Kaartmaten = storyboard (kaart 332 x 327 eenheden; tekening op 16,16 300 x 199; titel midden y 244).
+-->
+<style>
+  @font-face { font-family: 'Great Vibes'; src: url('../hert/GreatVibes-Regular.ttf') format('truetype'); font-display: block; }
+  @font-face { font-family: 'EB Garamond'; src: url('../hert/EBGaramond-Regular.ttf') format('truetype'); font-display: block; }
+  :root { --nacht-boven: #0d1a2b; --nacht-onder: #1f3550; --hout-licht: #ecd9b8; --hout-donker: #dcc29a; --inkt: #4a2c17;
+          --maan: #faf0cd; --tekst: #f4ead8; --laser: #ff9a3c; --k: 1px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: linear-gradient(var(--nacht-boven), var(--nacht-onder)); background-color: var(--nacht-boven);
+         overflow: hidden; color: var(--inkt); font-family: 'EB Garamond', Georgia, serif; -webkit-tap-highlight-color: transparent; }
+  .podium { position: fixed; inset: 0; overflow: hidden; }
+  canvas.sneeuw { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .maan { position: absolute; width: calc(110 * var(--k)); height: calc(110 * var(--k)); border-radius: 50%;
+          background: var(--maan); box-shadow: 0 0 calc(60 * var(--k)) calc(30 * var(--k)) rgba(250, 240, 205, .22);
+          left: calc(50% - 180 * var(--k) + 57 * var(--k)); will-change: transform, opacity; }
+  /* de houten kaart: maten in kaarteenheden (var --k = px per eenheid; kaart = 332 eenheden breed) */
+  .kaart { position: absolute; left: 50%; width: calc(332 * var(--k)); height: calc(327 * var(--k));
+           margin-left: calc(-166 * var(--k)); border-radius: calc(5 * var(--k));
+           background: linear-gradient(180deg, var(--hout-licht), var(--hout-donker));
+           box-shadow: calc(10 * var(--k)) calc(12 * var(--k)) calc(22 * var(--k)) rgba(0, 0, 0, .55);
+           transform-origin: 52.7% 38.4%; will-change: transform; overflow: hidden; }
+  .kaart .maanlicht { position: absolute; inset: 0; pointer-events: none;
+           background: radial-gradient(ellipse at 0% 0%, rgba(250, 240, 205, .18), transparent 55%); }
+  .kaart .glim { position: absolute; top: 0; bottom: 0; width: 6%; left: -10%; pointer-events: none;
+           background: linear-gradient(90deg, transparent, rgba(255, 250, 235, .55), transparent); transform: skewX(-18deg); }
+  .laag { position: absolute; inset: 0; }
+  .laag canvas { position: absolute; left: calc(16 * var(--k)); top: calc(16 * var(--k)); width: calc(300 * var(--k)); height: calc(198.75 * var(--k)); }
+  .titel { position: absolute; left: 0; right: 0; top: calc(220 * var(--k)); height: calc(48 * var(--k)); line-height: calc(48 * var(--k));
+           text-align: center; font-family: 'Great Vibes', cursive; font-size: calc(38 * var(--k)); color: var(--inkt); white-space: nowrap; }
+  .kader { position: absolute; left: calc(7 * var(--k)); top: calc(7 * var(--k)); right: calc(7 * var(--k)); bottom: calc(7 * var(--k));
+           border: max(1px, calc(1 * var(--k))) solid rgba(74, 44, 23, .86); border-radius: calc(4 * var(--k)); }
+  .schets { opacity: 0; }
+  .laserlijn { position: absolute; height: max(2px, calc(2 * var(--k))); margin-top: -1px; display: none; background: var(--laser);
+               box-shadow: 0 0 calc(4 * var(--k)) calc(1 * var(--k)) rgba(255, 190, 110, .6); }
+  .start { position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; text-align: center; border: 0; width: 100%;
+           background: radial-gradient(ellipse at 50% 40%, rgba(31, 53, 80, .6), rgba(13, 26, 43, .96)); color: var(--tekst); font: inherit; cursor: pointer; }
+  .start .groot { font-family: 'Great Vibes', cursive; font-size: clamp(40px, 12vw, 72px); display: block; }
+  .start .klein { font-size: clamp(15px, 4vw, 20px); opacity: .85; }
+  .start.weg { display: none; }
+  .hud { position: fixed; left: 8px; top: 8px; z-index: 8; font: 12px Georgia, serif; color: #ffd65a; background: rgba(0,0,0,.45);
+         padding: 3px 7px; border-radius: 6px; pointer-events: none; }
+  .hud.uit { display: none; }
+  /* scène 7: naam (door het sterrenstof gebracht) en slot onder de kaart */
+  .naam { position: absolute; left: 0; right: 0; top: calc(290.75 * var(--k)); transform: translateY(-50%); text-align: center;
+          font-family: 'EB Garamond', Georgia, serif; color: var(--inkt); opacity: 0; white-space: nowrap; }
+  .slot { position: absolute; left: 0; right: 0; text-align: center; color: var(--tekst); opacity: 0; pointer-events: none; }
+  .slot .wens { font-size: calc(15 * var(--k)); }
+  .slot .atelier { font-size: calc(12 * var(--k)); opacity: .7; margin-top: calc(6 * var(--k)); }
+  .slot button { font: inherit; font-size: calc(13 * var(--k)); color: var(--tekst); background: transparent; border: 1px solid rgba(244,234,216,.55);
+                 border-radius: 999px; padding: calc(4 * var(--k)) calc(16 * var(--k)); margin-top: calc(8 * var(--k)); cursor: pointer; pointer-events: none; }   /* klikbaar gemaakt in tekenOp zodra het slot zichtbaar is (keuring D3) */
+</style>
+</head>
+<body>
+<div class="podium" id="podium">
+  <canvas class="sneeuw" id="sneeuwAchter" aria-hidden="true"></canvas>
+  <div class="maan" id="maan"></div>
+  <canvas class="sneeuw" id="luchtDoek" aria-hidden="true"></canvas>         <!-- D2: kerstman + slee + sterrenspoor -->
+  <div class="kaart" id="kaart" aria-label="Houten kerstkaart">
+    <div class="laag schets" id="schets">                                  <!-- variant D: lichte voorschets -->
+      <canvas id="schetsDoek"></canvas><div class="titel">Zalig Kerstfeest</div><div class="kader"></div>
+    </div>
+    <div class="laag" id="gravure">
+      <canvas id="doek"></canvas><div class="titel" id="titel">Zalig Kerstfeest</div><div class="kader" id="kader"></div>
+    </div>
+    <div class="laserlijn" id="laserlijn"></div>
+    <div class="maanlicht"></div>
+    <div class="glim" id="glim"></div>
+    <div class="naam" id="naam">Voor jou</div>
+  </div>
+  <canvas class="sneeuw" id="stofDoek" aria-hidden="true"></canvas>          <!-- D3: sterrenstof -->
+  <canvas class="sneeuw" id="sneeuwVoor" aria-hidden="true"></canvas>
+  <div class="slot" id="slot">
+    <div class="wens">Warme feestdagen en een gelukkig nieuwjaar</div>
+    <div class="atelier" id="atelier"></div>
+    <button id="opnieuw" type="button">&#8635; Opnieuw</button>
+  </div>
+</div>
+<div class="hud uit" id="hud"></div>
+<button class="start" id="start" type="button" aria-label="Open de kerstkaart">
+  <span><span class="groot">Zalig Kerstfeest</span><span class="klein">&#10052; Tik om je kaart te openen &#10052;</span></span>
+</button>
+<script src="../gedeeld/motor.js?v=20261111h"></script>
+<script src="../gedeeld/muziek.js?v=20261111g1"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const S = KerstMotor.spoor;
+const VERSIE = '20261111j';
+const MAAT = 4 * 60 / 116, INTRO = 2;
+const tM = (m) => (m - 1 + INTRO) * MAAT;            // begin melodiemaat m (s)
+const T = { laser: tM(1), dieren: tM(3), jongKijkt: tM(5), kijktOp: tM(7), kerstman: tM(9), sterrenstof: tM(14), naam: tM(16) };
+const EINDE = T.naam + 6;                            // slotakkoord klinkt ± 4 s uit; daarna staat het eindbeeld stil
+const ATELIER = '';                                  // naam/logo van het atelier (nog te kiezen door de maker); leeg = niet tonen
+const PARAM = new URLSearchParams(location.search);
+const LASER_DUUR = T.dieren - T.laser;
+const CAM = 0.3;                                    // s: camera volgt het hert (keuring D1)
+
+/* ===== Tijdlijn scène 1-4 (sleutelmomenten in seconden) ===== */
+const TL = {
+  plankY: S([[0, 0.08], [0.25, 0.08], [0.9, 0, 'uit']]),                     // plank schuift omhoog (deel van kaarthoogte)
+  plankZicht: S([[0, 0], [0.25, 0], [0.5, 1, 'uit']]),
+  glim: S([[0, -0.15], [0.6, -0.15], [1.5, 1.15, 'zacht']]),                  // glimlicht schuift over het hout
+  maanY: S([[0, 70], [4.1, 0, 'uit']]),                                        // maan komt op (kaarteenheden)
+  maanZicht: S([[0, 0.5], [2, 1, 'zacht']]),
+  // scène 3-4: hele kaart zoomt in op de dieren en weer uit; camera kantelt omhoog (kaart zakt licht)
+  // keuring D1: in scène 4 kijkt het hert EERST op (op de maat), de camera volgt 0,3 s later (CAM), het jong 0,5 s
+  kaartZoom: S([[0, 1], [T.dieren + 0.2, 1], [T.dieren + 3.2, 1.3, 'zacht'], [T.kijktOp + CAM, 1.3], [T.kijktOp + CAM + 1.6, 1, 'zacht']]),
+  kaartZak: S([[0, 0], [T.kijktOp + CAM, 0], [T.kijktOp + CAM + 1.6, 14, 'zacht']]),      // kaarteenheden omlaag = camera omhoog
+  dieptZoom: S([[0, 1], [T.dieren + 0.2, 1], [T.dieren + 3.2, 1.04, 'zacht'], [T.kijktOp + CAM, 1.04], [T.kijktOp + CAM + 1.6, 1, 'zacht']]),
+  dieptDx: S([[0, 0], [T.dieren + 0.2, 0], [T.dieren + 3.2, 4, 'zacht'], [T.kijktOp + CAM, 4], [T.kijktOp + CAM + 1.6, 0, 'zacht']]),
+  // hert: oor-tikjes in scène 3, kop omhoog naar de maan (linksboven) in scène 4
+  oorL: S([[0, 0], [T.dieren + 2.0, 0], [T.dieren + 2.12, -6, 'uit'], [T.dieren + 2.35, 0, 'naveer'],
+           [T.dieren + 6.1, 0], [T.dieren + 6.22, -6, 'uit'], [T.dieren + 6.45, 0, 'naveer']]),
+  oorR: S([[0, 0], [T.dieren + 3.0, 0], [T.dieren + 3.12, 6, 'uit'], [T.dieren + 3.35, 0, 'naveer']]),   // 11,3 s: niet samen met het jong (maat 5)
+  kop: S([[0, 0], [T.kijktOp, 0], [T.kijktOp + 1.2, 3, 'zacht'], [T.kerstman + 4.6, 3], [T.kerstman + 8.0, -2, 'zacht'],   // keuring D2: hert kijkt de slee na
+        [T.naam - 0.4, -2], [T.naam + 0.8, 0, 'zacht']]),   // keuring D3: op de slotnoot kijkt het hert naar de naam
+  kopOp: S([[0, 0], [T.kijktOp, 0], [T.kijktOp + 1.2, -6, 'zacht'], [T.naam - 0.4, -6], [T.naam + 0.8, -2, 'zacht']]),   // kop zakt terug (D3)
+  // jong: maat 5 kijkt naar het hert (rechts = met de klok mee), scène 4 volgt omhoog een halve tel later
+  jong: S([[0, 0], [T.jongKijkt, 0], [T.jongKijkt + 0.9, -6, 'zacht'], [T.kijktOp - 0.6, -6], [T.kijktOp, 0, 'zacht'],
+           [T.kijktOp + 0.5, 0], [T.kijktOp + 1.7, 4, 'zacht'], [T.naam - 0.1, 4], [T.naam + 1.1, -2, 'zacht']]),   // jong volgt het hert (D3)
+  adem: S([[0, 0], [T.dieren, 0], [T.dieren + 1, 1, 'zacht']]),              // ademen begint na het graveren
+  // scène 5 (D2): vluchtparameter u langs de boog; u = 0,5 = kerstman precies voor de maan (pose), daar vertraagt hij
+  // scène 5: vluchtparameter u = sleeU(t) (zie hieronder; keuring D2: doorlopende snelheid, geen hapering)
+  // scène 6: kaart schuift rustig omhoog TIJDENS het sterrenstof (storyboard 3.1: naam verschijnt op een stilstaande kaart)
+  slotOmhoog: S([[0, 0], [T.sterrenstof, 0], [T.sterrenstof + 2.2, 1, 'zacht']]),
+  // scène 7: naam op de slotnoot (maat 16), gloed dooft uit in 1,5 s; daarna wens en "Opnieuw"
+  naam: S([[0, 0], [T.naam - 0.05, 0], [T.naam + 0.6, 1, 'uit']]),
+  gloed: S([[0, 0], [T.naam - 0.6, 0], [T.naam + 0.1, 1, 'zacht'], [T.naam + 1.6, 0, 'zacht']]),
+  slot: S([[0, 0], [T.naam + 1.2, 0], [T.naam + 2.4, 1, 'zacht']]),
+};
+
+/* ===== Maten: kaart in kaarteenheden; --k = px per eenheid ===== */
+let k = 1, kaartTop = 0, slotOmhoogPx = 0;
+function maatvoering() {
+  const b = innerWidth, h = innerHeight;
+  // breedte: 94 % van het scherm, max 520 px; HOOGTE (11-11, fout op breed maar laag scherm: maan viel bovenaan
+  // buiten beeld): maan (210 eenheden boven de kaart) + kaart (327) + 46 px onderaan + 30 px boven moeten passen
+  k = Math.min(b * 0.94 / 332, 520 / 332, (h - 46 - 30) / (210 + 55 + 327));
+  document.documentElement.style.setProperty('--k', k + 'px');
+  // kaart zoals storyboard: midden op 430/640 van de hoogte, maar onderrand minstens 46 px vrij
+  kaartTop = Math.min(h * 430 / 640, h - 46 - 14 * k - 327 * k / 2) - 327 * k / 2;   // 14 = zak in scène 4
+  $('kaart').style.top = kaartTop + 'px';
+  $('maan').style.top = (kaartTop - 210 * k) + 'px';
+  // scène 6-7: kaart omhoog zodat wens + atelier + knop (± 92 eenheden) onder de kaart passen, onderaan >= 46 px vrij
+  // (de kaart staat dan nog 14 eenheden lager door de camera-zak van scène 4)
+  slotOmhoogPx = Math.max(0, kaartTop + (327 + 14 + 92) * k + 46 - h);
+  passNaam();
+  // canvas-scherpte (keuring C): css-breedte x DPR x maximale kaartzoom 1,3; meer dan 1200 heeft geen zin (bron)
+  const px = Math.min(1200, Math.round(300 * k * (devicePixelRatio || 1) * 1.3));
+  for (const c of [$('doek'), $('schetsDoek')]) { c.width = px; c.height = Math.round(px * 795 / 1200); }
+  for (const c of [$('sneeuwAchter'), $('sneeuwVoor'), $('luchtDoek'), $('stofDoek')]) { c.width = b * Math.min(2, devicePixelRatio || 1); c.height = h * Math.min(2, devicePixelRatio || 1); }
+}
+
+/* ===== Sneeuw: achter (klein, traag, overal) en voor (groot, wazig, alleen in de lucht boven de kaart) ===== */
+function maakSneeuw(n, rmin, rmax, snel) {
+  return Array.from({ length: n }, () => ({ x: Math.random(), y: Math.random(), r: rmin + Math.random() * (rmax - rmin),
+    v: snel * (0.6 + Math.random() * 0.8), f: Math.random() * 6.28, a: 0.4 + Math.random() * 0.5 }));
+}
+const vlokA = maakSneeuw(110, 0.6, 1.7, 0.018), vlokV = maakSneeuw(9, 3.5, 6, 0.05);
+function tekenSneeuw(doek, vlokken, t, wazig, alleenBoven) {
+  const c = doek.getContext('2d'), s = doek.width / innerWidth;
+  c.setTransform(s, 0, 0, s, 0, 0); c.clearRect(0, 0, innerWidth, innerHeight);
+  if (alleenBoven) {                                  // keuring D1: ECHTE bovenrand (bij inzoomen 28 px hoger dan in rust)
+    const boven = $('kaart').getBoundingClientRect().top;
+    c.save(); c.beginPath(); c.rect(0, 0, innerWidth, Math.max(0, boven - 12)); c.clip();
+  }
+  c.filter = wazig ? 'blur(2px)' : 'none';
+  for (const f of vlokken) {
+    const y = ((f.y + t * f.v) % 1.05) * innerHeight, x = (f.x * innerWidth + Math.sin(t * 0.8 + f.f) * 12 + innerWidth) % innerWidth;
+    c.globalAlpha = f.a * (wazig ? 0.6 : 1); c.beginPath(); c.arc(x, y, f.r, 0, 6.283); c.fillStyle = '#fff'; c.fill();
+  }
+  c.globalAlpha = 1; c.filter = 'none';
+  if (alleenBoven) c.restore();
+}
+
+/* ===== Laser variant D (zelfde verhoudingen als storyboard/animatic) ===== */
+function masker(el, deelOnthuld, zacht = 0.05) {           // onthult van onder naar boven; deelOnthuld 0..1 van het element
+  const p = deelOnthuld * (1 + 2 * zacht) - zacht;
+  const m = `linear-gradient(to top, #000 ${((p - zacht) * 100).toFixed(2)}%, transparent ${((p + zacht) * 100).toFixed(2)}%)`;
+  el.style.webkitMaskImage = m; el.style.maskImage = m;
+}
+function laserLijn(zicht, yEenheden, x0, x1) {
+  const l = $('laserlijn');
+  l.style.display = zicht ? 'block' : 'none';
+  if (zicht) Object.assign(l.style, { top: (yEenheden * k) + 'px', left: (x0 * k) + 'px', width: ((x1 - x0) * k) + 'px' });
+}
+function laserScene(t) {
+  const f = Math.min(1, Math.max(0, (t - T.laser) / LASER_DUUR));
+  $('schets').style.opacity = t < T.laser - 0.3 ? 0 : (t < T.dieren ? Math.min(0.15, (t - T.laser + 0.3) / 0.3 * 0.15) : 0);
+  if (t < T.laser) { masker($('doek'), 0); masker($('titel'), 0); $('kader').style.opacity = 0; laserLijn(false); return; }
+  if (f < 0.7) {
+    const d = f / 0.7; masker($('doek'), d); masker($('titel'), 0); $('kader').style.opacity = 0;
+    laserLijn(true, 16 + 198.75 * (1 - d), 16, 316);
+  } else if (f < 0.9) {
+    const d = (f - 0.7) / 0.2; masker($('doek'), 1); masker($('titel'), d); $('kader').style.opacity = 0;
+    laserLijn(true, 220 + 48 * (1 - d), 70, 262);
+  } else {
+    masker($('doek'), 1); masker($('titel'), 1); $('kader').style.opacity = Math.min(1, (f - 0.9) / 0.1); laserLijn(false);
+  }
+}
+
+/* ===== Scène 5 (D2): kerstman vliegt in een boog links laag -> voor de maan -> rechts hoog =====
+ * Boog = kwadratische Bézier P0 -> C -> P2, met C zo gekozen dat het midden (u = 0,5) precies op het maanmidden valt.
+ * De slee kantelt licht mee met de vliegrichting; de rendieren deinen om beurten (galop-indruk), de slee wiebelt na.
+ * Sterrenspoor: punten op de baan van de achterkant van de slee in de laatste 1,4 s (berekend, dus ook in ?stil=t). */
+let sleeMotor = null;
+/** Vluchtparameter u(t) met DOORLOPENDE snelheid (keuring D2: eerst haperde de slee op 27,2 s tot 2 px/s):
+ *  binnenkomen = vertragen tot de pose (u = 0,5 op T.kerstman + 4,3 s) + overal een rustige drift DRIFT/s
+ *  + vanaf 1,5 s na de pose zacht versnellen (derdemachtsterm, begint met snelheid 0, dus geen knik).
+ *  u < 0 en u >= 1 = buiten beeld (niet getekend). */
+const SLEE_T0 = () => T.kerstman + 0.2, SLEE_POSE = () => T.kerstman + 4.3, DRIFT = 0.008, VERSNEL_D = 3.5;
+function sleeU(t) {
+  const t0 = SLEE_T0(), tp = SLEE_POSE(), te = tp + 1.5;
+  const x = Math.min(1, Math.max(0, (t - t0) / (tp - t0)));
+  const binnen = 0.5 * (1 - Math.pow(1 - x, 3));                          // vertragend tot stilstand in de pose
+  const A = 1 - 0.5 - DRIFT * (te + VERSNEL_D - tp);                         // u = 1 precies op te + VERSNEL_D
+  const weg = t > te ? A * Math.pow((t - te) / VERSNEL_D, 3) : 0;
+  return binnen + DRIFT * (t - tp) + weg;
+}
+function boog(u) {
+  const m = $('maan').getBoundingClientRect(), W = innerWidth;
+  const M = [m.left + m.width / 2, m.top + m.height / 2];
+  // start/einde volledig buiten beeld, gerekend met de ECHTE slee-breedte (D2-test: op een smalle gsm stak het span
+  // bij de start al 40 px in beeld). Gespiegeld: van de kerstman loopt het span 809 bron-px naar rechts, 143 naar links.
+  const s = 250 * k / 952;
+  // keuring D2: ECHTE BOOG. Start veel lager dan het einde ligt: de raaklijn is bij het binnenkomen steil (klimmen),
+  // boven de maan vlakt ze af en bij het weggaan stijgt ze nog licht.
+  const P0 = [-(809 * s) - 30, M[1] + 170 * k], P2 = [W + 143 * s + 30, M[1] - 30 * k];
+  const C = [2 * M[0] - (P0[0] + P2[0]) / 2, 2 * M[1] - (P0[1] + P2[1]) / 2];
+  const a = (1 - u) * (1 - u), b2 = 2 * (1 - u) * u, c = u * u;
+  const p = [a * P0[0] + b2 * C[0] + c * P2[0], a * P0[1] + b2 * C[1] + c * P2[1]];
+  const d = [2 * (1 - u) * (C[0] - P0[0]) + 2 * u * (P2[0] - C[0]), 2 * (1 - u) * (C[1] - P0[1]) + 2 * u * (P2[1] - C[1])];
+  return { p, hoek: -Math.atan2(d[1], d[0]) * 180 / Math.PI };
+}
+function sleeStaat(t) {
+  const u = sleeU(t), b = boog(u);
+  const gal = (i) => 6 * Math.sin(2 * Math.PI * 2.1 * t + i * 0.8);       // deinen: 6 bron-px, 2,1 keer per seconde
+  return { x: b.p[0], y: b.p[1], schaal: 250 * k / 952, hoek: b.hoek * 0.85, deinen: [gal(0), gal(1), gal(2)],
+           wiebel: 1.5 * Math.sin(2 * Math.PI * 2.1 * t - 1.2), pixelVerhouding: devicePixelRatio || 1, u };
+}
+function tekenLucht(t) {
+  const doek = $('luchtDoek'), c = doek.getContext('2d'), sc = doek.width / innerWidth;
+  c.setTransform(sc, 0, 0, sc, 0, 0); c.clearRect(0, 0, innerWidth, innerHeight);
+  if (!sleeMotor || t < T.kerstman || t > T.sterrenstof + 1) return;
+  const st = sleeStaat(t);
+  if (st.u <= 0 || st.u >= 1) return;
+  // sterrenspoor achter de slee (achterkant slee = bron-punt rechts onderaan de slee, gespiegeld = links op het scherm)
+  for (let i = 1; i <= 28; i++) {
+    const dt = i * 0.05, tt = t - dt;
+    if (tt < T.kerstman) break;
+    const sp = sleeStaat(tt); if (sp.u <= 0) break;
+    const [x, y] = sleeMotor.punt(sp, 930, 240);
+    // keuring D2: sterretjes fonkelen ook in de tijd (niet alleen per plaats in het spoor)
+    const f = 1 - i / 29, r = (0.6 + 1.8 * f * (0.55 + 0.45 * Math.sin(i * 2.3 + t * 9))) * k;
+    c.globalAlpha = 0.9 * f; c.fillStyle = '#ffecaa';
+    c.beginPath(); c.arc(x, y + dt * 18 * k, r, 0, 6.283); c.fill();
+  }
+  c.globalAlpha = 1;
+  sleeMotor.teken(c, st);
+}
+
+/* ===== Scène 7: de naam (uit de link: ?v=Naam; zonder naam: "Voor jou") =====
+ * Naam in de link (keuze de maker, QR altijd even groot). Alleen als TEKST getoond (textContent, nooit HTML), max 40 tekens.
+ * Passend gemaakt: één regel tot 70 % van de kaartbreedte, grootte 17-30 eenheden; anders 2 regels (12-15 eenheden). */
+function naamTekst() {
+  let v = (PARAM.get('v') || '').trim().replace(/\s+/g, ' ');
+  if (v.length > 40) { v = v.slice(0, 41); v = v.slice(0, v.lastIndexOf(' ') > 20 ? v.lastIndexOf(' ') : 40); }  // te lang: afknippen op een heel woord
+  return v ? 'Voor ' + v : 'Voor jou';
+}
+function passNaam() {
+  const el = $('naam'), tekst = naamTekst(), c = document.createElement('canvas').getContext('2d');
+  const breed = (px, t = tekst) => { c.font = `${px}px 'EB Garamond', Georgia, serif`; return c.measureText(t).width; };
+  const maxB = 0.7 * 332;
+  let px = 30; while (px > 17 && breed(px) > maxB) px -= 0.5;
+  el.textContent = tekst;
+  if (breed(px) > maxB) {                                   // 2 regels: knip bij de spatie het dichtst bij het midden
+    const woorden = tekst.split(' '); let best = 1, minVerschil = 1e9;
+    for (let i = 1; i < woorden.length; i++) {
+      const a = woorden.slice(0, i).join(' ').length, b = tekst.length - a;
+      if (Math.abs(a - b) < minVerschil) { minVerschil = Math.abs(a - b); best = i; }
+    }
+    const regels = [woorden.slice(0, best).join(' '), woorden.slice(best).join(' ')];
+    const langste = Math.max(breed(15, regels[0]), breed(15, regels[1]));
+    px = Math.max(12, Math.min(15, 15 * maxB / langste));
+    el.textContent = '';
+    regels.forEach((r, i) => { if (i) el.appendChild(document.createElement('br')); el.appendChild(document.createTextNode(r)); });
+  }
+  el.style.fontSize = (px * k) + 'px';
+  el.style.lineHeight = '1.1';
+  el.dataset.eenheden = px;
+}
+
+/* ===== Scène 6: sterrenstof =====
+ * 70 sterretjes vertrekken rechtsboven (waar de slee wegvloog), dwarrelen in een zachte zwaai naar de plek van de naam
+ * en blijven daar fonkelen tot de slotnoot; daarna doven ze. Alles berekend uit t (dus ook in ?stil=t).
+ * Vaste "willekeur" (zelfde patroon elke keer): kleine eigen rekenreeks. */
+const STOF = (() => {
+  let z = 7; const r = () => (z = (z * 16807) % 2147483647) / 2147483647;
+  return Array.from({ length: 70 }, () => ({ start: T.sterrenstof + r() * 2.2, duur: 1.6 + r() * 0.9, x0: 0.75 + r() * 0.35,
+    y0: -0.05 + r() * 0.2, dx: (r() - 0.5) * 0.55, dy: (r() - 0.5) * 0.6, zwaai: 10 + r() * 25, fase: r() * 6.28, r: 0.7 + r() * 1.6 }));
+})();
+function tekenStof(t) {
+  const doek = $('stofDoek'), c = doek.getContext('2d'), sc = doek.width / innerWidth;
+  c.setTransform(sc, 0, 0, sc, 0, 0); c.clearRect(0, 0, innerWidth, innerHeight);
+  if (t < T.sterrenstof || t > T.naam + 2) return;
+  const n = $('naam').getBoundingClientRect(), doelX = n.left + n.width / 2, doelY = n.top + n.height / 2;
+  const halfB = Math.max(40 * k, n.width / 2), halfH = Math.max(8 * k, n.height / 2);
+  const doof = t > T.naam + 0.2 ? Math.max(0, 1 - (t - T.naam - 0.2) / 1.2) : 1;
+  for (const p of STOF) {
+    if (t < p.start) continue;
+    const f = Math.min(1, (t - p.start) / p.duur), e = 1 - Math.pow(1 - f, 2);       // vertragend aankomen
+    const tx = doelX + p.dx * halfB * 2, ty = doelY + p.dy * halfH * 2;
+    const x = p.x0 * innerWidth * (1 - e) + tx * e + Math.sin(f * 5 + p.fase) * p.zwaai * k * (1 - f);
+    const y = p.y0 * innerHeight * (1 - e) + ty * e;
+    const fonkel = 0.55 + 0.45 * Math.sin(t * 11 + p.fase * 3);
+    const r = p.r * k * (f < 1 ? 1 : 0.8 + 0.4 * fonkel);
+    c.globalAlpha = Math.min(1, f * 3) * doof * (0.6 + 0.4 * fonkel);
+    c.fillStyle = '#ffecaa'; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill();
+    if (r > 1.6 * k) { c.globalAlpha *= 0.6; c.fillRect(x - 3 * r, y - 0.3, 6 * r, 0.6); c.fillRect(x - 0.3, y - 3 * r, 0.6, 6 * r); }
+  }
+  c.globalAlpha = 1;
+}
+
+/* ===== Hoofdlus ===== */
+let ctx = null, muziek = null, kaartMotor = null, schetsKlaar = false, laatsteMotorT = -1, gestopt = false, lusLoopt = false;
+const RUST_STOP = EINDE + 120;                       // keuring D3: eindbeeld blijft leven (sneeuw, ademen), na 2 min stil om de batterij te sparen
+function staatOp(t) {
+  const a = TL.adem(t);
+  return {
+    camera: { zoom: TL.dieptZoom(t), dx: TL.dieptDx(t) },
+    hoek: { hert_kop: TL.kop(t), hert_oor_l: TL.oorL(t), hert_oor_r: TL.oorR(t), jong_kop: TL.jong(t) },
+    schuif: { hert_kop: [0, TL.kopOp(t)] },
+    adem: { hert_lijf: a * 0.013 * Math.sin(t * 2 * Math.PI / 3.2), jong_lijf: a * 0.014 * Math.sin(t * 2 * Math.PI / 2.6 + 1) },
+  };
+}
+function teken() {
+  const t = muziek ? ctx.currentTime - muziek.start : 0;
+  tekenOp(t);
+  // Na EINDE staan alle scènes in hun eindstand; sneeuw en ademen lopen rustig door (keuring D3: niet bevriezen).
+  if (t > RUST_STOP - 3) for (const id of ['sneeuwAchter', 'sneeuwVoor']) $(id).style.opacity = Math.max(0, (RUST_STOP - t) / 3);
+  if (t < RUST_STOP) requestAnimationFrame(teken); else { gestopt = true; lusLoopt = false; }
+}
+/** Eén beeld van het filmpje op tijdstip t (s). Ook gebruikt door ?stil=t (keuren zonder muziek). */
+function tekenOp(t) {
+  // scène 1: plank, glimlicht, maan
+  $('kaart').style.opacity = TL.plankZicht(t);
+  const zoom = TL.kaartZoom(t), zak = TL.kaartZak(t);
+  const omhoog = TL.slotOmhoog(t) * slotOmhoogPx;
+  $('kaart').style.transform = `translateY(${(TL.plankY(t) * 327 + zak) * k - omhoog}px) scale(${zoom})`;
+  $('glim').style.left = (TL.glim(t) * 100) + '%';
+  $('maan').style.transform = `translateY(${(TL.maanY(t) + zak * 0.35) * k - omhoog * 0.35}px)`;
+  $('maan').style.opacity = TL.maanZicht(t);
+  // scène 2: laser
+  laserScene(t);
+  // tekening: vóór scène 3 stil (één keer tekenen), daarna elk beeld
+  if (t >= T.dieren - 0.05 || laatsteMotorT < 0) { kaartMotor.teken(staatOp(t)); laatsteMotorT = t; }
+  tekenLucht(t);
+  tekenSneeuw($('sneeuwAchter'), vlokA, t, false, false);
+  tekenSneeuw($('sneeuwVoor'), vlokV, t, true, true);
+  // scène 6-7: sterrenstof, naam met gloed, slot onder de kaart
+  tekenStof(t);
+  const g = TL.gloed(t);
+  $('naam').style.opacity = TL.naam(t);
+  $('naam').style.textShadow = g > 0.01 ? `0 0 ${8 * k * g}px rgba(255,236,170,${0.9 * g}), 0 0 ${18 * k * g}px rgba(255,236,170,${0.5 * g})` : 'none';
+  const kb = $('kaart').getBoundingClientRect();
+  $('slot').style.top = (kb.bottom + 14 * k) + 'px';
+  $('slot').style.opacity = TL.slot(t);
+  $('opnieuw').style.pointerEvents = TL.slot(t) > 0.9 ? 'auto' : 'none';   // keuring D3: onzichtbare knop nooit klikbaar
+  $('hud').textContent = `${t.toFixed(1).replace('.', ',')} s · ${t < T.laser ? '1 opening' : t < T.dieren ? '2 laser' : t < T.kijktOp ? '3 dieren' : t < T.kerstman ? '4 kijkt op' : t < T.sterrenstof ? '5 kerstman' : t < T.naam ? '6 sterrenstof' : '7 naam'}`;
+}
+
+async function voorbereiden() {
+  maatvoering();
+  kaartMotor = await KerstMotor.maak({ canvas: $('doek'), figuren: 'figuren/', lagen: 'lagen/', versie: VERSIE });
+  kaartMotor.teken(staatOp(0));
+  sleeMotor = await KerstMotor.maakSlee({ figuren: 'figuren/', versie: VERSIE });
+  $('schetsDoek').getContext('2d').drawImage($('doek'), 0, 0);   // voorschets = zelfde tekening, licht getoond
+  schetsKlaar = true;
+  laserScene(0);
+  addEventListener('resize', () => { maatvoering(); kaartMotor.teken(staatOp(0)); $('schetsDoek').getContext('2d').drawImage($('doek'), 0, 0); });
+}
+function speel() {
+  if (muziek) muziek();
+  gestopt = false;
+  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === 'suspended') ctx.resume();
+  muziek = KerstMuziek.speel(ctx, 'jinglebells', 'belletjes', { intro: INTRO, zwelling: { van: 7, tot: 9, factor: 2.5, weg: [13.5, 15, 0.35] }, slot: true,
+    belklank: 'metaal', opvullen: true, volume: 1.4 });   // geluidskeuring G1 (11-11): echte belletjes, gaten gevuld, +5 dB, belletjes sterven weg met de slee
+  muziek.geluid.laser(muziek.start + T.laser, LASER_DUUR);
+  muziek.geluid.fonkel(muziek.start + T.sterrenstof, T.naam - T.sterrenstof, 2);   // sterrenstof (x2: boven de belletjes uit, G1)
+  muziek.geluid.tinkel(muziek.start + T.naam, 1.6);                              // naam verschijnt (+4 dB, G1)
+  $('start').classList.add('weg');
+  for (const id of ['sneeuwAchter', 'sneeuwVoor']) $(id).style.opacity = '';
+  if (!lusLoopt) { lusLoopt = true; requestAnimationFrame(teken); }        // keuring D3: nooit een tweede tekenlus
+}
+$('opnieuw').addEventListener('click', speel);
+voorbereiden().then(() => {
+  $('start').addEventListener('click', speel);
+  const stil = parseFloat(new URLSearchParams(location.search).get('stil'));
+  if (Number.isFinite(stil)) { $('start').classList.add('weg'); tekenOp(stil); window.__tekenOp = tekenOp; }   // keurmodus
+  if (PARAM.get('debug') === '1') $('hud').classList.remove('uit');            // tijd/scène alleen voor testen
+  if (ATELIER) $('atelier').textContent = ATELIER; else $('atelier').style.display = 'none';
+  window.__klaar = true;
+}).catch((e) => { $('hud').classList.remove('uit'); $('hud').textContent = 'FOUT: ' + e.message; window.__fout = e.message; });
+</script>
+</body>
+</html>

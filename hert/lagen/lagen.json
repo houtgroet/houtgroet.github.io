@@ -1,0 +1,28 @@
+{
+ "assenstelsel": "animatie/hert/tekening.png (1200 x 795), zelfde als figuren/",
+ "volgorde": [
+  "lucht",
+  "ver",
+  "dichtbij",
+  "hert + jong (figuren/)"
+ ],
+ "diepte": {
+  "lucht": 0.25,
+  "ver": 0.55,
+  "dichtbij": 1.0
+ },
+ "dieren_horen_bij": "dichtbij",
+ "camera_midden": [
+  600,
+  560
+ ],
+ "controle_rust_vs_achtergrond": {
+  "max": 43,
+  "gemiddeld": 0.306
+ },
+ "camera_regels": [
+  "nooit verder uitzoomen dan de ruststand (schaal >= 1)",
+  "verschuiving dx alleen samen met inzoomen: schaal >= 1 + |dx| / 600",
+  "beeld afsnijden binnen het tekeningvak (niet over kaderlijn en titel)"
+ ]
+}

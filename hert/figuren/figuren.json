@@ -1,0 +1,219 @@
+{
+ "kaart": {
+  "assenstelsel": "animatie/hert/tekening.png (1200 x 795)",
+  "delen": {
+   "hert_lijf": {
+    "x": 621,
+    "y": 301,
+    "b": 319,
+    "h": 284,
+    "draaipunt": null,
+    "ouder": null
+   },
+   "hert_kop": {
+    "x": 509,
+    "y": 71,
+    "b": 307,
+    "h": 256,
+    "draaipunt": [
+     662,
+     322
+    ],
+    "ouder": "hert_lijf"
+   },
+   "hert_oor_l": {
+    "x": 591,
+    "y": 223,
+    "b": 63,
+    "h": 50,
+    "draaipunt": [
+     638,
+     252
+    ],
+    "ouder": "hert_kop"
+   },
+   "hert_oor_r": {
+    "x": 675,
+    "y": 223,
+    "b": 59,
+    "h": 50,
+    "draaipunt": [
+     690,
+     252
+    ],
+    "ouder": "hert_kop"
+   },
+   "jong_lijf": {
+    "x": 413,
+    "y": 415,
+    "b": 179,
+    "h": 180,
+    "draaipunt": null,
+    "ouder": null
+   },
+   "jong_kop": {
+    "x": 522,
+    "y": 360,
+    "b": 83,
+    "h": 90,
+    "draaipunt": [
+     562,
+     440
+    ],
+    "ouder": "jong_lijf"
+   }
+  }
+ },
+ "slee": {
+  "assenstelsel": "uitsnede slee-groep uit K23 slee4_v2",
+  "delen": {
+   "rendier_1": {
+    "x": 0,
+    "y": 75,
+    "b": 261,
+    "h": 294,
+    "midden": [
+     104.6,
+     235.7
+    ]
+   },
+   "rendier_2": {
+    "x": 220,
+    "y": 30,
+    "b": 251,
+    "h": 284,
+    "midden": [
+     321.9,
+     184.3
+    ]
+   },
+   "rendier_3": {
+    "x": 444,
+    "y": 0,
+    "b": 235,
+    "h": 278,
+    "midden": [
+     536.9,
+     152.9
+    ]
+   },
+   "slee": {
+    "x": 660,
+    "y": 37,
+    "b": 292,
+    "h": 225,
+    "midden": [
+     818.5,
+     153.7
+    ]
+   },
+   "teugels": {
+    "x": 196,
+    "y": 97,
+    "b": 464,
+    "h": 208,
+    "midden": [
+     475.7,
+     150.2
+    ]
+   }
+  },
+  "teugelankers": [
+   {
+    "deel": "rendier_1",
+    "xy": [
+     197.6,
+     209.1
+    ]
+   },
+   {
+    "deel": "rendier_1",
+    "xy": [
+     235.1,
+     217.8
+    ]
+   },
+   {
+    "deel": "rendier_2",
+    "xy": [
+     411.4,
+     165.2
+    ]
+   },
+   {
+    "deel": "rendier_2",
+    "xy": [
+     459.9,
+     169.2
+    ]
+   },
+   {
+    "deel": "rendier_2",
+    "xy": [
+     241.2,
+     193.6
+    ]
+   },
+   {
+    "deel": "rendier_2",
+    "xy": [
+     252.7,
+     213.3
+    ]
+   },
+   {
+    "deel": "rendier_3",
+    "xy": [
+     614.2,
+     109.6
+    ]
+   },
+   {
+    "deel": "rendier_3",
+    "xy": [
+     553.3,
+     124.5
+    ]
+   },
+   {
+    "deel": "rendier_3",
+    "xy": [
+     628.9,
+     144.0
+    ]
+   },
+   {
+    "deel": "rendier_3",
+    "xy": [
+     459.0,
+     153.0
+    ]
+   },
+   {
+    "deel": "rendier_3",
+    "xy": [
+     463.1,
+     168.3
+    ]
+   },
+   {
+    "deel": "slee",
+    "xy": [
+     658.0,
+     100.0
+    ]
+   },
+   {
+    "deel": "slee",
+    "xy": [
+     658.0,
+     131.8
+    ]
+   }
+  ],
+  "oorsprong_in_slee4_v2": [
+   200,
+   112
+  ]
+ }
+}
