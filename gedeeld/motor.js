@@ -16,6 +16,7 @@
  * Gebruik:
  *   const kaart = await KerstMotor.maak({ canvas, figuren: 'figuren/', lagen: 'lagen/' });
  *   kaart.teken({ camera: {zoom, dx}, hoek: {hert_kop: 3}, adem: {hert_lijf: 0.005}, schuif: {hert_kop: [0, -2]} });
+ *   optioneel: draaipunt: {jong_lijf: [x, y]} = draaipunt voor dit beeld (ook voor delen zonder vast draaipunt)
  *   const kop = KerstMotor.spoor([[0, 0], [1.5, 3, 'zacht'], [3, 0, 'zacht']]);   kop(t) -> waarde op tijd t
  * Hoeken in graden, positief = tegen de klok in (zelfde afspraak als de Python-keuringen van stap A).
  */
@@ -100,9 +101,12 @@
       const voet = d.y + d.h;
       ctx.translate(0, voet); ctx.scale(1, 1 + adem); ctx.translate(0, -voet);
     }
+    // staat.draaipunt (11-11, sprong jong): een draaipunt per beeld opgeven, ook voor delen zonder vast draaipunt
+    // (bv. het hele jong kantelt rond de achterhoeven bij de afzet en rond de voorhoeven bij de landing).
     const hoek = (staat.hoek || {})[naam];
-    if (hoek && d.draaipunt) {
-      const [px, py] = d.draaipunt;
+    const dp = ((staat.draaipunt || {})[naam]) || d.draaipunt;
+    if (hoek && dp) {
+      const [px, py] = dp;
       ctx.translate(px, py); ctx.rotate(-hoek * Math.PI / 180); ctx.translate(-px, -py);
     }
   }

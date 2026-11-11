@@ -97,13 +97,13 @@
 <button class="start" id="start" type="button" aria-label="Open de kerstkaart">
   <span><span class="groot">Zalig Kerstfeest</span><span class="klein">&#10052; Tik om je kaart te openen &#10052;</span></span>
 </button>
-<script src="../gedeeld/motor.js?v=20261111h"></script>
+<script src="../gedeeld/motor.js?v=20261111m"></script>
 <script src="../gedeeld/muziek.js?v=20261111g1"></script>
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
 const S = KerstMotor.spoor;
-const VERSIE = '20261111l';
+const VERSIE = '20261111m';
 const MAAT = 4 * 60 / 116, INTRO = 2;
 const tM = (m) => (m - 1 + INTRO) * MAAT;            // begin melodiemaat m (s)
 const T = { laser: tM(1), dieren: tM(3), jongKijkt: tM(5), kijktOp: tM(7), kerstman: tM(9), sterrenstof: tM(14), naam: tM(16) };
@@ -112,6 +112,30 @@ const ATELIER = '';                                  // naam/logo van het atelie
 const PARAM = new URLSearchParams(location.search);
 const LASER_DUUR = T.dieren - T.laser;
 const HUP = tM(13) + MAAT / 4;                      // afzet eerste sprongetje jong (tel 2 van maat 13 = 29,48 s)
+/* Sprongetjes van het jong (keuring 'huppelen stijf', 11-11). Gemeten oorzaken van stijfheid in de eerste versie:
+ * recht op en neer als één blok (kanteling 0, geen voorwaartse beweging = "lift"), 48 % van de luchttijd bijna stil
+ * bovenaan (echte worp 32 %), kopje star, 2 identieke sprongen. Nu per sprong:
+ *  - hoogte = echte worpbaan (parabool 4u(1-u)), voorwaarts met gelijke snelheid (dx0 -> dx1)
+ *  - kanteling: eerste helft rond de ACHTERSTE hoef (voorkant komt eerst op), tweede helft rond de VOORSTE hoef
+ *    (landt op de voorpoten); hoek = kantel * sin(2 pi u), op u = 0,5 precies 0 -> draaipunt wisselt zonder sprong
+ *  - 2e sprong lager, korter, minder kanteling (geen mechanische herhaling)
+ * Bronpixels; 60 = 2,8 mm op de Pixel 10. Draaipunten = achterste / voorste hoefpunt van jong_lijf op de sneeuwlijn. */
+const SPRONG = [
+  { af: HUP, land: HUP + 0.40, hoog: 60, dx0: 0, dx1: 14, kantel: 9 },
+  { af: HUP + MAAT / 4, land: HUP + MAAT / 4 + 0.34, hoog: 40, dx0: 14, dx1: 0, kantel: 6 },
+];
+const HOEF_ACHTER = [428, 591], HOEF_VOOR = [588, 591];
+function sprongStand(t) {
+  for (const sp of SPRONG) {
+    if (t <= sp.af || t >= sp.land) continue;
+    const u = (t - sp.af) / (sp.land - sp.af);
+    const hoek = sp.kantel * Math.sin(2 * Math.PI * u) * (u < 0.5 ? 1 : 0.7);
+    return { dx: sp.dx0 + (sp.dx1 - sp.dx0) * u, dy: -sp.hoog * 4 * u * (1 - u), hoek, draaipunt: u < 0.5 ? HOEF_ACHTER : HOEF_VOOR };
+  }
+  // tussen de sprongen staat het jong op de plaats waar het landde
+  const dx = t >= SPRONG[1].land ? SPRONG[1].dx1 : t >= SPRONG[0].land ? SPRONG[0].dx1 : 0;
+  return { dx, dy: 0, hoek: 0, draaipunt: HOEF_ACHTER };
+}
 const CAM = 1.0;                                    // s: camera volgt het hert (keuring D1); gsm-keuring 11-11: camera pas
                                                     //    als het opkijken grotendeels klaar is (camera stil tijdens grote beweging)
 /* Gsm-keuring 11-11 (vaste regel: beweging in MM op een echte gsm, bijbeweging >= 1,5 mm, hoofdactie >= 2,5 mm):
@@ -147,14 +171,16 @@ const TL = {
   jong: S([[0, 0], [T.jongKijkt, 0], [T.jongKijkt + 0.9, -20, 'zacht'], [T.kijktOp - 0.6, -20], [T.kijktOp, 0, 'zacht'],
            [T.kijktOp + 0.5, 0], [T.kijktOp + 1.7, 16, 'zacht'], [T.naam - 0.1, 16], [T.naam + 1.1, -10, 'zacht']]),   // jong volgt het hert (D3)
   adem: S([[0, 0], [T.dieren, 0], [T.dieren + 1, 1, 'zacht']]),              // ademen begint na het graveren
-  // stap B gsm-keuring: het jong huppelt 2x van blijdschap als de slee wegvliegt (maat 13, op de tellen; hert is dan
-  // klaar met nakijken = geen 2 blikvangers tegelijk). Hoogte in bronpixels (56 = 2,6 mm op de Pixel 10).
-  // Omhoog vertragend ('uit'), omlaag versnellend ('in') = sprongboog; indrukken bij afzet/landing, uitrekken in de lucht.
-  huppel: S([[0, 0], [HUP, 0], [HUP + 0.22, -56, 'uit'], [HUP + 0.44, 0, 'in'],
-             [HUP + 0.58, 0], [HUP + 0.78, -44, 'uit'], [HUP + 0.98, 0, 'in']]),
-  indruk: S([[0, 0], [HUP - 0.18, 0], [HUP - 0.02, -0.07, 'zacht'], [HUP + 0.04, 0.05, 'uit'], [HUP + 0.2, 0, 'zacht'],
-             [HUP + 0.42, 0], [HUP + 0.48, -0.07, 'uit'], [HUP + 0.56, 0, 'zacht'], [HUP + 0.6, 0.04, 'uit'], [HUP + 0.74, 0, 'zacht'],
-             [HUP + 0.96, 0], [HUP + 1.02, -0.06, 'uit'], [HUP + 1.22, 0, 'zacht']]),
+  // Sprongetjes van het jong: zie SPRONG hieronder (keuring 'huppelen stijf' 11-11). Indrukken/uitrekken en het
+  // naveren van het kopje op de contactmomenten (afzet, in de lucht intrekken, uitstrekken, landen, opvangen).
+  indruk: S([[0, 0], [SPRONG[0].af - 0.20, 0], [SPRONG[0].af - 0.03, -0.08, 'zacht'], [SPRONG[0].af + 0.04, 0.07, 'uit'],
+             [SPRONG[0].af + 0.18, -0.04, 'zacht'], [SPRONG[0].land - 0.06, 0.04, 'zacht'], [SPRONG[0].land + 0.04, -0.09, 'uit'],
+             [SPRONG[1].af - 0.01, -0.02, 'zacht'], [SPRONG[1].af + 0.04, 0.05, 'uit'], [SPRONG[1].af + 0.16, -0.03, 'zacht'],
+             [SPRONG[1].land - 0.05, 0.03, 'zacht'], [SPRONG[1].land + 0.05, -0.08, 'uit'], [SPRONG[1].land + 0.2, 0.02, 'zacht'],
+             [SPRONG[1].land + 0.36, 0, 'zacht']]),
+  kopNa: S([[0, 0], [SPRONG[0].af - 0.05, 0], [SPRONG[0].af + 0.06, -8, 'uit'], [SPRONG[0].af + 0.22, 6, 'zacht'],
+            [SPRONG[0].land + 0.03, -10, 'uit'], [SPRONG[1].af + 0.05, -4, 'zacht'], [SPRONG[1].af + 0.18, 3, 'zacht'],
+            [SPRONG[1].land + 0.04, -9, 'uit'], [SPRONG[1].land + 0.22, 3, 'zacht'], [SPRONG[1].land + 0.42, 0, 'zacht']]),
   // scène 5 (D2): vluchtparameter u langs de boog; u = 0,5 = kerstman precies voor de maan (pose), daar vertraagt hij
   // scène 5: vluchtparameter u = sleeU(t) (zie hieronder; keuring D2: doorlopende snelheid, geen hapering)
   // scène 6: kaart schuift rustig omhoog TIJDENS het sterrenstof (storyboard 3.1: naam verschijnt op een stilstaande kaart)
@@ -361,7 +387,7 @@ function tekenStof(t) {
  * Alleen in de lucht (staand heeft de tekening geen schaduw). Hoe hoger, hoe kleiner en lichter. Getekend op het
  * kaartcanvas in het tekening-assenstelsel, met dezelfde camera als de laag 'dichtbij' (de dieren horen daarbij). */
 function schaduwJong(st, cam) {
-  const h = -((st.schuif.jong_lijf || [0, 0])[1]);
+  const [dx, dyS] = st.schuif.jong_lijf || [0, 0], h = -dyS;
   if (h < 0.5) return;
   const doek = $('doek'), c = doek.getContext('2d'), f = kaartMotor.lagen.diepte[kaartMotor.lagen.dieren_horen_bij];
   const [mx, my] = KerstMotor.CAMERA.midden, s = 1 + (cam.zoom - 1) * f;
@@ -371,7 +397,7 @@ function schaduwJong(st, cam) {
   const krimp = 1 - Math.min(0.45, h / 130);
   c.globalAlpha = 0.22 * Math.min(1, h / 8) * krimp;
   c.fillStyle = '#4a2c17';
-  c.beginPath(); c.ellipse(500, 588, 70 * krimp, 7 * krimp, 0, 0, 2 * Math.PI); c.fill();
+  c.beginPath(); c.ellipse(508 + dx, 588, 70 * krimp, 7 * krimp, 0, 0, 2 * Math.PI); c.fill();
   c.restore();
 }
 
@@ -379,11 +405,12 @@ function schaduwJong(st, cam) {
 let ctx = null, muziek = null, kaartMotor = null, schetsKlaar = false, laatsteMotorT = -1, gestopt = false, lusLoopt = false;
 const RUST_STOP = EINDE + 120;                       // keuring D3: eindbeeld blijft leven (sneeuw, ademen), na 2 min stil om de batterij te sparen
 function staatOp(t) {
-  const a = TL.adem(t);
+  const a = TL.adem(t), sp = sprongStand(t);
   return {
     camera: { zoom: TL.dieptZoom(t), dx: TL.dieptDx(t) },
-    hoek: { hert_kop: TL.kop(t), hert_oor_l: TL.oorL(t), hert_oor_r: TL.oorR(t), jong_kop: TL.jong(t) },
-    schuif: { hert_kop: [0, TL.kopOp(t)], jong_lijf: [0, TL.huppel(t)] },
+    hoek: { hert_kop: TL.kop(t), hert_oor_l: TL.oorL(t), hert_oor_r: TL.oorR(t), jong_kop: TL.jong(t) + TL.kopNa(t), jong_lijf: sp.hoek },
+    draaipunt: { jong_lijf: sp.draaipunt },
+    schuif: { hert_kop: [0, TL.kopOp(t)], jong_lijf: [sp.dx, sp.dy] },
     adem: { hert_lijf: a * 0.025 * Math.sin(t * 2 * Math.PI / 3.2), jong_lijf: a * 0.028 * Math.sin(t * 2 * Math.PI / 2.6 + 1) + TL.indruk(t) },   // gsm-keuring: 2,5 %
   };
 }
