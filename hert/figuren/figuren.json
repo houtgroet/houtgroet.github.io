@@ -61,6 +61,50 @@
      440
     ],
     "ouder": "jong_lijf"
+   },
+   "jong_poot_av": {
+    "x": 426,
+    "y": 515,
+    "b": 26,
+    "h": 72,
+    "draaipunt": [
+     441.0,
+     525.0
+    ],
+    "ouder": "jong_lijf"
+   },
+   "jong_poot_an": {
+    "x": 457,
+    "y": 515,
+    "b": 36,
+    "h": 75,
+    "draaipunt": [
+     467.5,
+     525.0
+    ],
+    "ouder": "jong_lijf"
+   },
+   "jong_poot_vv": {
+    "x": 530,
+    "y": 505,
+    "b": 20,
+    "h": 86,
+    "draaipunt": [
+     538.0,
+     513.0
+    ],
+    "ouder": "jong_lijf"
+   },
+   "jong_poot_vn": {
+    "x": 552,
+    "y": 506,
+    "b": 26,
+    "h": 84,
+    "draaipunt": [
+     559.5,
+     513.0
+    ],
+    "ouder": "jong_lijf"
    }
   }
  },

@@ -97,13 +97,13 @@
 <button class="start" id="start" type="button" aria-label="Open de kerstkaart">
   <span><span class="groot">Zalig Kerstfeest</span><span class="klein">&#10052; Tik om je kaart te openen &#10052;</span></span>
 </button>
-<script src="../gedeeld/motor.js?v=20261111m"></script>
+<script src="../gedeeld/motor.js?v=20261111p2"></script>
 <script src="../gedeeld/muziek.js?v=20261111g1"></script>
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
 const S = KerstMotor.spoor;
-const VERSIE = '20261111m';
+const VERSIE = '20261111p2';
 const MAAT = 4 * 60 / 116, INTRO = 2;
 const tM = (m) => (m - 1 + INTRO) * MAAT;            // begin melodiemaat m (s)
 const T = { laser: tM(1), dieren: tM(3), jongKijkt: tM(5), kijktOp: tM(7), kerstman: tM(9), sterrenstof: tM(14), naam: tM(16) };
@@ -125,6 +125,31 @@ const SPRONG = [
   { af: HUP + MAAT / 4, land: HUP + MAAT / 4 + 0.34, hoog: 40, dx0: 14, dx1: 0, kantel: 6 },
 ];
 const HOEF_ACHTER = [428, 591], HOEF_VOOR = [588, 591];
+/* Pootjes in de sprong (stap P2, 11-11). Hoek + = hoefje naar VOREN (het jong kijkt naar rechts), - = naar achter.
+ *  afzet:      achterpootjes duwen af en strekken naar achter (-28), voorpootjes komen los en plooien (-30)
+ *  in de lucht: alles ingetrokken (voor -35 = onder het lijf, achter +32 = naar voren onder de buik)
+ *  voor landing: voorpootjes reiken vooruit (+18), achterpootjes slepen (-8), op de landing terug naar 0 ("planten")
+ *  opvangen:   klein naveren (voor -5, achter +3) en rust
+ * 2e sprong 70 % van de hoeken (en geen eigen aanloop: ze volgt meteen op de landing). Verre pootjes 0,03 s later en
+ * 90 % = overlap, geen identieke beweging. */
+function pootSporen() {
+  const rijen = { voor: [[0, 0]], achter: [[0, 0]] };
+  SPRONG.forEach((sp, i) => {
+    const k = i === 0 ? 1 : 0.7, D = sp.land - sp.af;
+    const voor = [[sp.af - 0.05, 3 * k], [sp.af + 0.08, -30 * k, 'uit'], [sp.af + 0.35 * D, -35 * k, 'zacht'],
+                  [sp.af + 0.72 * D, 18 * k, 'zacht'], [sp.land, 0, 'zacht'], [sp.land + 0.06, -5 * k, 'uit'], [sp.land + 0.16, 0, 'zacht']];
+    const achter = [[sp.af - 0.05, -3 * k], [sp.af + 0.06, -28 * k, 'uit'], [sp.af + 0.4 * D, 32 * k, 'zacht'],   // gsm-meting: +20 gaf maar 0,8-1,0 mm
+                    [sp.af + 0.8 * D, -8 * k, 'zacht'], [sp.land, 0, 'zacht'], [sp.land + 0.06, 3 * k, 'uit'], [sp.land + 0.16, 0, 'zacht']];
+    if (i === 0) { rijen.voor.push([sp.af - 0.2, 0]); rijen.achter.push([sp.af - 0.2, 0]); }
+    for (const [naam, lijst] of [['voor', voor], ['achter', achter]]) {
+      const laatst = rijen[naam][rijen[naam].length - 1][0];
+      lijst.forEach((p) => { if (p[0] > laatst + 1e-6) rijen[naam].push(p); });   // sprong 2 volgt meteen op landing 1
+    }
+  });
+  const later = (rij, dt, f) => rij.map(([t, v, e]) => (e ? [t + dt, v * f, e] : [t + dt, v * f]));
+  return { vn: S(rijen.voor), vv: S(later(rijen.voor, 0.03, 0.9)), an: S(rijen.achter), av: S(later(rijen.achter, 0.03, 0.9)) };
+}
+const POOT = pootSporen();
 function sprongStand(t) {
   for (const sp of SPRONG) {
     if (t <= sp.af || t >= sp.land) continue;
@@ -408,7 +433,8 @@ function staatOp(t) {
   const a = TL.adem(t), sp = sprongStand(t);
   return {
     camera: { zoom: TL.dieptZoom(t), dx: TL.dieptDx(t) },
-    hoek: { hert_kop: TL.kop(t), hert_oor_l: TL.oorL(t), hert_oor_r: TL.oorR(t), jong_kop: TL.jong(t) + TL.kopNa(t), jong_lijf: sp.hoek },
+    hoek: { hert_kop: TL.kop(t), hert_oor_l: TL.oorL(t), hert_oor_r: TL.oorR(t), jong_kop: TL.jong(t) + TL.kopNa(t), jong_lijf: sp.hoek,
+            jong_poot_vn: POOT.vn(t), jong_poot_vv: POOT.vv(t), jong_poot_an: POOT.an(t), jong_poot_av: POOT.av(t) },
     draaipunt: { jong_lijf: sp.draaipunt },
     schuif: { hert_kop: [0, TL.kopOp(t)], jong_lijf: [sp.dx, sp.dy] },
     adem: { hert_lijf: a * 0.025 * Math.sin(t * 2 * Math.PI / 3.2), jong_lijf: a * 0.028 * Math.sin(t * 2 * Math.PI / 2.6 + 1) + TL.indruk(t) },   // gsm-keuring: 2,5 %

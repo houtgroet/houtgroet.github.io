@@ -126,7 +126,10 @@
     const laadBeeldV = (pad) => laadBeeld(pad + v);
     const [fig, lag] = await Promise.all([laadJson(opties.figuren + 'figuren.json' + v), laadJson(opties.lagen + 'lagen.json' + v)]);
     const delen = fig.kaart.delen;
-    const volgorde = ['hert_lijf', 'hert_kop', 'hert_oor_l', 'hert_oor_r', 'jong_lijf', 'jong_kop'];
+    // Pootjes van het jong (stap P1, 11-11): als ze in figuren.json staan, worden ze VÓÓR het lijf getekend (= erachter),
+    // verre pootjes eerst; het lijf dekt dan hun verborgen gewrichtsstrook. Zonder pootjes = oude volgorde.
+    const pootjes = ['jong_poot_av', 'jong_poot_vv', 'jong_poot_an', 'jong_poot_vn'].filter((n) => delen[n]);
+    const volgorde = ['hert_lijf', 'hert_kop', 'hert_oor_l', 'hert_oor_r', ...pootjes, 'jong_lijf', 'jong_kop'];
     const lagenNamen = ['lucht', 'ver', 'dichtbij'];
     const beeld = {};
     await Promise.all([
