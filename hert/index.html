@@ -103,7 +103,7 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
 const S = KerstMotor.spoor;
-const VERSIE = '20261111j';
+const VERSIE = '20261111l';
 const MAAT = 4 * 60 / 116, INTRO = 2;
 const tM = (m) => (m - 1 + INTRO) * MAAT;            // begin melodiemaat m (s)
 const T = { laser: tM(1), dieren: tM(3), jongKijkt: tM(5), kijktOp: tM(7), kerstman: tM(9), sterrenstof: tM(14), naam: tM(16) };
@@ -111,7 +111,12 @@ const EINDE = T.naam + 6;                            // slotakkoord klinkt ± 4 
 const ATELIER = '';                                  // naam/logo van het atelier (nog te kiezen door de maker); leeg = niet tonen
 const PARAM = new URLSearchParams(location.search);
 const LASER_DUUR = T.dieren - T.laser;
-const CAM = 0.3;                                    // s: camera volgt het hert (keuring D1)
+const HUP = tM(13) + MAAT / 4;                      // afzet eerste sprongetje jong (tel 2 van maat 13 = 29,48 s)
+const CAM = 1.0;                                    // s: camera volgt het hert (keuring D1); gsm-keuring 11-11: camera pas
+                                                    //    als het opkijken grotendeels klaar is (camera stil tijdens grote beweging)
+/* Gsm-keuring 11-11 (vaste regel: beweging in MM op een echte gsm, bijbeweging >= 1,5 mm, hoofdactie >= 2,5 mm):
+ * alle bewegingen groter gemaakt. Grenzen uit de naadtest (motor_test.html, GROOT-gevallen): kop tot +8/-10 gr met
+ * 10 px omhoog of 8 px omlaag = 0 gaatjes; oren max 8 gr (10-12 gr gaf 1-2 gaatjes aan de oorvoet); ademen 2,5 %. */
 
 /* ===== Tijdlijn scène 1-4 (sleutelmomenten in seconden) ===== */
 const TL = {
@@ -127,16 +132,29 @@ const TL = {
   dieptZoom: S([[0, 1], [T.dieren + 0.2, 1], [T.dieren + 3.2, 1.04, 'zacht'], [T.kijktOp + CAM, 1.04], [T.kijktOp + CAM + 1.6, 1, 'zacht']]),
   dieptDx: S([[0, 0], [T.dieren + 0.2, 0], [T.dieren + 3.2, 4, 'zacht'], [T.kijktOp + CAM, 4], [T.kijktOp + CAM + 1.6, 0, 'zacht']]),
   // hert: oor-tikjes in scène 3, kop omhoog naar de maan (linksboven) in scène 4
-  oorL: S([[0, 0], [T.dieren + 2.0, 0], [T.dieren + 2.12, -6, 'uit'], [T.dieren + 2.35, 0, 'naveer'],
-           [T.dieren + 6.1, 0], [T.dieren + 6.22, -6, 'uit'], [T.dieren + 6.45, 0, 'naveer']]),
-  oorR: S([[0, 0], [T.dieren + 3.0, 0], [T.dieren + 3.12, 6, 'uit'], [T.dieren + 3.35, 0, 'naveer']]),   // 11,3 s: niet samen met het jong (maat 5)
-  kop: S([[0, 0], [T.kijktOp, 0], [T.kijktOp + 1.2, 3, 'zacht'], [T.kerstman + 4.6, 3], [T.kerstman + 8.0, -2, 'zacht'],   // keuring D2: hert kijkt de slee na
-        [T.naam - 0.4, -2], [T.naam + 0.8, 0, 'zacht']]),   // keuring D3: op de slotnoot kijkt het hert naar de naam
-  kopOp: S([[0, 0], [T.kijktOp, 0], [T.kijktOp + 1.2, -6, 'zacht'], [T.naam - 0.4, -6], [T.naam + 0.8, -2, 'zacht']]),   // kop zakt terug (D3)
+  // oren: dubbel tikje (2x snel) = beter zichtbaar dan één groter tikje (oren max 8 gr, naadtest)
+  oorL: S([[0, 0], [T.dieren + 2.0, 0], [T.dieren + 2.1, -8, 'uit'], [T.dieren + 2.28, 0, 'naveer'], [T.dieren + 2.38, -8, 'uit'], [T.dieren + 2.6, 0, 'naveer'],
+           [T.dieren + 5.4, 0], [T.dieren + 5.5, -8, 'uit'], [T.dieren + 5.75, 0, 'naveer']]),   // 13,7 s: oor draait mee bij het besnuffelen
+  oorR: S([[0, 0], [T.dieren + 3.0, 0], [T.dieren + 3.1, 8, 'uit'], [T.dieren + 3.28, 0, 'naveer'], [T.dieren + 3.38, 8, 'uit'], [T.dieren + 3.6, 0, 'naveer']]),   // 11,3 s: niet samen met het jong (maat 5)
+  // scène 3 (gsm-keuring): het hert buigt de kop naar het jong en besnuffelt het (13,1-15,1 s), dan terug
+  kop: S([[0, 0], [T.jongKijkt + 0.7, 0], [T.jongKijkt + 1.9, 8, 'zacht'], [T.jongKijkt + 2.7, 8], [T.kijktOp - 0.4, 0, 'zacht'],
+        [T.kijktOp, 0], [T.kijktOp + 1.2, 8, 'zacht'], [T.kerstman + 4.6, 8], [T.kerstman + 8.0, -10, 'zacht'],   // D2: kijkt de slee na
+        [T.naam - 0.4, -10], [T.naam + 0.8, 0, 'zacht']]),   // D3: op de slotnoot kijkt het hert naar de naam
+  kopOp: S([[0, 0], [T.jongKijkt + 0.7, 0], [T.jongKijkt + 1.9, 8, 'zacht'], [T.jongKijkt + 2.7, 8], [T.kijktOp - 0.4, 0, 'zacht'],
+          [T.kijktOp, 0], [T.kijktOp + 1.2, -10, 'zacht'], [T.naam - 0.4, -10], [T.naam + 0.8, 8, 'zacht']]),   // + = omlaag (besnuffelen, naar de naam)
   // jong: maat 5 kijkt naar het hert (rechts = met de klok mee), scène 4 volgt omhoog een halve tel later
-  jong: S([[0, 0], [T.jongKijkt, 0], [T.jongKijkt + 0.9, -6, 'zacht'], [T.kijktOp - 0.6, -6], [T.kijktOp, 0, 'zacht'],
-           [T.kijktOp + 0.5, 0], [T.kijktOp + 1.7, 4, 'zacht'], [T.naam - 0.1, 4], [T.naam + 1.1, -2, 'zacht']]),   // jong volgt het hert (D3)
+  // jong (gsm-keuring): -20 / +16 gr (naadtest: tot +-24 gr = 0 gaatjes) zodat het kopje >= 1,5 mm beweegt op de gsm
+  jong: S([[0, 0], [T.jongKijkt, 0], [T.jongKijkt + 0.9, -20, 'zacht'], [T.kijktOp - 0.6, -20], [T.kijktOp, 0, 'zacht'],
+           [T.kijktOp + 0.5, 0], [T.kijktOp + 1.7, 16, 'zacht'], [T.naam - 0.1, 16], [T.naam + 1.1, -10, 'zacht']]),   // jong volgt het hert (D3)
   adem: S([[0, 0], [T.dieren, 0], [T.dieren + 1, 1, 'zacht']]),              // ademen begint na het graveren
+  // stap B gsm-keuring: het jong huppelt 2x van blijdschap als de slee wegvliegt (maat 13, op de tellen; hert is dan
+  // klaar met nakijken = geen 2 blikvangers tegelijk). Hoogte in bronpixels (56 = 2,6 mm op de Pixel 10).
+  // Omhoog vertragend ('uit'), omlaag versnellend ('in') = sprongboog; indrukken bij afzet/landing, uitrekken in de lucht.
+  huppel: S([[0, 0], [HUP, 0], [HUP + 0.22, -56, 'uit'], [HUP + 0.44, 0, 'in'],
+             [HUP + 0.58, 0], [HUP + 0.78, -44, 'uit'], [HUP + 0.98, 0, 'in']]),
+  indruk: S([[0, 0], [HUP - 0.18, 0], [HUP - 0.02, -0.07, 'zacht'], [HUP + 0.04, 0.05, 'uit'], [HUP + 0.2, 0, 'zacht'],
+             [HUP + 0.42, 0], [HUP + 0.48, -0.07, 'uit'], [HUP + 0.56, 0, 'zacht'], [HUP + 0.6, 0.04, 'uit'], [HUP + 0.74, 0, 'zacht'],
+             [HUP + 0.96, 0], [HUP + 1.02, -0.06, 'uit'], [HUP + 1.22, 0, 'zacht']]),
   // scène 5 (D2): vluchtparameter u langs de boog; u = 0,5 = kerstman precies voor de maan (pose), daar vertraagt hij
   // scène 5: vluchtparameter u = sleeU(t) (zie hieronder; keuring D2: doorlopende snelheid, geen hapering)
   // scène 6: kaart schuift rustig omhoog TIJDENS het sterrenstof (storyboard 3.1: naam verschijnt op een stilstaande kaart)
@@ -339,6 +357,24 @@ function tekenStof(t) {
   c.globalAlpha = 1;
 }
 
+/* ===== Schaduw van het jong tijdens een sprongetje (stap B) =====
+ * Alleen in de lucht (staand heeft de tekening geen schaduw). Hoe hoger, hoe kleiner en lichter. Getekend op het
+ * kaartcanvas in het tekening-assenstelsel, met dezelfde camera als de laag 'dichtbij' (de dieren horen daarbij). */
+function schaduwJong(st, cam) {
+  const h = -((st.schuif.jong_lijf || [0, 0])[1]);
+  if (h < 0.5) return;
+  const doek = $('doek'), c = doek.getContext('2d'), f = kaartMotor.lagen.diepte[kaartMotor.lagen.dieren_horen_bij];
+  const [mx, my] = KerstMotor.CAMERA.midden, s = 1 + (cam.zoom - 1) * f;
+  c.save();
+  c.setTransform(doek.width / 1200, 0, 0, doek.height / 795, 0, 0);
+  c.translate(mx + cam.dx * f, my); c.scale(s, s); c.translate(-mx, -my);
+  const krimp = 1 - Math.min(0.45, h / 130);
+  c.globalAlpha = 0.22 * Math.min(1, h / 8) * krimp;
+  c.fillStyle = '#4a2c17';
+  c.beginPath(); c.ellipse(500, 588, 70 * krimp, 7 * krimp, 0, 0, 2 * Math.PI); c.fill();
+  c.restore();
+}
+
 /* ===== Hoofdlus ===== */
 let ctx = null, muziek = null, kaartMotor = null, schetsKlaar = false, laatsteMotorT = -1, gestopt = false, lusLoopt = false;
 const RUST_STOP = EINDE + 120;                       // keuring D3: eindbeeld blijft leven (sneeuw, ademen), na 2 min stil om de batterij te sparen
@@ -347,8 +383,8 @@ function staatOp(t) {
   return {
     camera: { zoom: TL.dieptZoom(t), dx: TL.dieptDx(t) },
     hoek: { hert_kop: TL.kop(t), hert_oor_l: TL.oorL(t), hert_oor_r: TL.oorR(t), jong_kop: TL.jong(t) },
-    schuif: { hert_kop: [0, TL.kopOp(t)] },
-    adem: { hert_lijf: a * 0.013 * Math.sin(t * 2 * Math.PI / 3.2), jong_lijf: a * 0.014 * Math.sin(t * 2 * Math.PI / 2.6 + 1) },
+    schuif: { hert_kop: [0, TL.kopOp(t)], jong_lijf: [0, TL.huppel(t)] },
+    adem: { hert_lijf: a * 0.025 * Math.sin(t * 2 * Math.PI / 3.2), jong_lijf: a * 0.028 * Math.sin(t * 2 * Math.PI / 2.6 + 1) + TL.indruk(t) },   // gsm-keuring: 2,5 %
   };
 }
 function teken() {
@@ -371,7 +407,7 @@ function tekenOp(t) {
   // scène 2: laser
   laserScene(t);
   // tekening: vóór scène 3 stil (één keer tekenen), daarna elk beeld
-  if (t >= T.dieren - 0.05 || laatsteMotorT < 0) { kaartMotor.teken(staatOp(t)); laatsteMotorT = t; }
+  if (t >= T.dieren - 0.05 || laatsteMotorT < 0) { const st = staatOp(t); const cam = kaartMotor.teken(st); laatsteMotorT = t; schaduwJong(st, cam); }
   tekenLucht(t);
   tekenSneeuw($('sneeuwAchter'), vlokA, t, false, false);
   tekenSneeuw($('sneeuwVoor'), vlokV, t, true, true);
