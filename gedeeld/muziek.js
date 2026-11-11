@@ -307,6 +307,23 @@
     ['C7', 'E7', 'G7'].forEach((n, i) => toon(ctx, uit, frequentie(n), t + i * 0.09, 0.07 * sterkte, KLOKKENSPEL, 1.4));
   }
 
+  /** Plofje in de sneeuw (verfijning sprong 11-11): korte, gedempte ruisstoot (laagdoorlaat 800 Hz) + heel kort
+   *  doffe toon. Geeft gewicht aan een landing; sterkte 1 = landing, kleiner = stapje. Hoorbaarheid gemeten (zie verslag). */
+  function plof(ctx, uit, t, sterkte = 1) {
+    const bron = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), g = ctx.createGain();
+    bron.buffer = ruisBuffer(ctx);
+    filter.type = 'lowpass'; filter.frequency.value = 800; filter.Q.value = 0.7;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.35 * sterkte, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    bron.connect(filter).connect(g).connect(uit);
+    bron.start(t, Math.random() * 0.5, 0.15);
+    const osc = ctx.createOscillator(), og = ctx.createGain();
+    osc.frequency.setValueAtTime(190, t); osc.frequency.exponentialRampToValueAtTime(90, t + 0.06);
+    og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(0.12 * sterkte, t + 0.003); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    osc.connect(og).connect(uit); osc.start(t); osc.stop(t + 0.08);
+  }
+
   /**
    * Speelt een lied. opties.herhaal = true: blijft herhalen tot stop() (plant telkens één ronde vooruit).
    * Geeft een stop-functie terug (zachte fade-out van 1,2 s).
@@ -370,6 +387,7 @@
       laser: (t, duur) => laserZoem(ctx, mix, t, duur),
       fonkel: (t, duur, sterkte) => fonkel(ctx, mix, t, duur, sterkte),
       tinkel: (t, sterkte) => tinkel(ctx, mix, t, sterkte),
+      plof: (t, sterkte) => plof(ctx, mix, t, sterkte),
     };
     return stop;
   }
