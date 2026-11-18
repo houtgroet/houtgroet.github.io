@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vrolijk Kerstfeest</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0d1a2b">
+<!--
+  Kerstfilm-afspeelpagina (Kerstfilm_Studio, 18-11-2026). VAST ADRES voor de gegraveerde QR: https://houtgroet.github.io/kerst/
+  Nu: proeffilm v1 (8 s, 960x540, zonder muziek). Later: alleen FILM en POSTER hieronder naar een nieuw versienummer
+  zetten (film_v2.mp4 ...) zodat gsm's geen oude versie uit hun cache tonen. Het adres blijft altijd gelijk.
+  Geen naam of foto van het kind op deze pagina (privacy). Geen autoplay met geluid: groot knopje om te starten.
+-->
+<style>
+  @font-face { font-family: 'Great Vibes'; src: url('../hert/GreatVibes-Regular.ttf') format('truetype'); font-display: swap; }
+  :root { --nacht: #0d1a2b; --nacht2: #1f3550; --warm: #ffcf7a; --tekst: #f4ead8; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: linear-gradient(var(--nacht), var(--nacht2)); background-color: var(--nacht); color: var(--tekst);
+         overflow: hidden; font-family: Georgia, serif; -webkit-tap-highlight-color: transparent; }
+  .podium { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  video { width: 100%; height: 100%; object-fit: contain; background: transparent; }
+  .knop { position: absolute; border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+          gap: 14px; background: none; color: var(--tekst); font-family: 'Great Vibes', Georgia, serif; font-size: clamp(26px, 6vmin, 48px); }
+  .knop .rond { width: clamp(110px, 26vmin, 180px); height: clamp(110px, 26vmin, 180px); border-radius: 50%;
+                background: radial-gradient(circle at 40% 35%, #ffe2a6, var(--warm) 55%, #e89a3a);
+                box-shadow: 0 0 40px rgba(255, 207, 122, .55); display: flex; align-items: center; justify-content: center; }
+  .knop .rond::after { content: ""; margin-left: 12%; border-style: solid; border-color: transparent transparent transparent #5a2e10;
+                       border-width: clamp(22px, 5vmin, 36px) 0 clamp(22px, 5vmin, 36px) clamp(36px, 8.5vmin, 58px); }
+  .knop.weg { display: none; }
+  .knop.opnieuw .rond::after { content: "\21BB"; border: 0; margin: 0; font-size: clamp(54px, 13vmin, 90px); color: #5a2e10; font-family: Arial, sans-serif; }
+</style>
+</head>
+<body>
+<div class="podium">
+  <video id="film" playsinline webkit-playsinline preload="auto" poster="poster_v1.jpg" src="film_v1.mp4"></video>
+  <button class="knop" id="start" aria-label="Film starten"><span class="rond"></span><span>Tik om te kijken</span></button>
+  <button class="knop opnieuw weg" id="nog" aria-label="Nog eens kijken"><span class="rond"></span><span>Nog eens</span></button>
+</div>
+<script>
+  // Eén grote knop: starten (met geluid, browserregel: alleen na een tik). Op Android ook volledig scherm + liggend.
+  const film = document.getElementById('film');
+  const start = document.getElementById('start');
+  const nog = document.getElementById('nog');
+
+  function groot() {
+    try {
+      const el = document.documentElement;
+      const p = el.requestFullscreen ? el.requestFullscreen() : null;
+      if (p && p.then) p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
+    } catch (e) { /* niet elke gsm laat dit toe: film speelt dan gewoon af */ }
+  }
+  function speel() {
+    start.classList.add('weg'); nog.classList.add('weg');
+    groot();
+    film.currentTime = 0;
+    const p = film.play();
+    if (p && p.catch) p.catch(() => start.classList.remove('weg'));
+  }
+  start.addEventListener('click', speel);
+  nog.addEventListener('click', speel);
+  film.addEventListener('ended', () => nog.classList.remove('weg'));
+</script>
+</body>
+</html>
