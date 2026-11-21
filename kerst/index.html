@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#0d1a2b">
 <!--
   Kerstfilm-afspeelpagina (Kerstfilm_Studio, 18-11-2026). VAST ADRES voor de gegraveerde QR: https://houtgroet.github.io/kerst/
-  Nu: proeffilm v4 (15,9 s, 24 fps, 960x540, zonder muziek; keuring 8,3/10): kerstman met elleboog, echte zwaai, ho-ho-ho met lachgezicht. Later: alleen FILM en POSTER hieronder naar een nieuw versienummer
+  Nu: EINDVERSIE film 01 = film_v5 (25,0 s, 24 fps, 1280x720, met geluid; zware eindkeuring 8/8 experten "af", +- 8,7/10). Later: alleen FILM en POSTER hieronder naar een nieuw versienummer
   zetten (film_v2.mp4 ...) zodat gsm's geen oude versie uit hun cache tonen. Het adres blijft altijd gelijk.
   Geen naam of foto van het kind op deze pagina (privacy). Geen autoplay met geluid: groot knopje om te starten.
 -->
@@ -29,20 +29,28 @@
   .knop .rond::after { content: ""; margin-left: 12%; border-style: solid; border-color: transparent transparent transparent #5a2e10;
                        border-width: clamp(22px, 5vmin, 36px) 0 clamp(22px, 5vmin, 36px) clamp(36px, 8.5vmin, 58px); }
   .knop.weg { display: none; }
+  .knop .hint { font-family: Georgia, serif; font-size: clamp(13px, 2.8vmin, 18px); opacity: .85; }
+  .bron { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-family: Arial, sans-serif;
+          font-size: 11px; opacity: .55; padding: 0 12px; }
+  .bron a { color: inherit; }
+  .bron.weg { display: none; }
   .knop.opnieuw .rond::after { content: "\21BB"; border: 0; margin: 0; font-size: clamp(54px, 13vmin, 90px); color: #5a2e10; font-family: Arial, sans-serif; }
 </style>
 </head>
 <body>
 <div class="podium">
-  <video id="film" playsinline webkit-playsinline preload="auto" poster="poster_v3.jpg" src="film_v4.mp4"></video>
-  <button class="knop" id="start" aria-label="Film starten"><span class="rond"></span><span>Tik om te kijken</span></button>
-  <button class="knop opnieuw weg" id="nog" aria-label="Nog eens kijken"><span class="rond"></span><span>Nog eens</span></button>
+  <video id="film" playsinline webkit-playsinline preload="auto" poster="poster_v5.jpg" src="film_v5.mp4"></video>
+  <button class="knop" id="start" aria-label="Film starten"><span class="rond"></span><span>Tik om te kijken</span><span class="hint">Zet het geluid aan &#128266;</span></button>
+  <button class="knop opnieuw weg" id="nog" aria-label="Nog eens kijken"><span class="rond"></span><span>Nog eens</span><span class="hint">Zet het geluid aan &#128266;</span></button>
+  <div class="bron" id="bron">3D-modellen: &lsquo;Cute Santa Claus&rsquo; door ItsKrish7 en &lsquo;Reinder Rigged&rsquo; door ACpixl,
+    <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">CC BY 4.0</a>, aangepast.</div>
 </div>
 <script>
   // Eén grote knop: starten (met geluid, browserregel: alleen na een tik). Op Android ook volledig scherm + liggend.
   const film = document.getElementById('film');
   const start = document.getElementById('start');
   const nog = document.getElementById('nog');
+  const bron = document.getElementById('bron');   // naamsvermelding: zichtbaar bij de knoppen, weg tijdens de film
 
   function groot() {
     try {
@@ -52,15 +60,15 @@
     } catch (e) { /* niet elke gsm laat dit toe: film speelt dan gewoon af */ }
   }
   function speel() {
-    start.classList.add('weg'); nog.classList.add('weg');
+    start.classList.add('weg'); nog.classList.add('weg'); bron.classList.add('weg');
     groot();
     film.currentTime = 0;
     const p = film.play();
-    if (p && p.catch) p.catch(() => start.classList.remove('weg'));
+    if (p && p.catch) p.catch(() => { start.classList.remove('weg'); bron.classList.remove('weg'); });
   }
   start.addEventListener('click', speel);
   nog.addEventListener('click', speel);
-  film.addEventListener('ended', () => nog.classList.remove('weg'));
+  film.addEventListener('ended', () => { nog.classList.remove('weg'); bron.classList.remove('weg'); });
 </script>
 </body>
 </html>
